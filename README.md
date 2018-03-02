@@ -1,4 +1,4 @@
-# Kotlin RxJava 2 notes
+# Kotlin RxJava 2 & RxAndroid notes
 
 ## Summary
 
@@ -18,14 +18,16 @@ Observables are sources of data. They can omit 0-X items and optionally terminat
 
 Additionally, there are useful helper methods for creating observables. The following examples are static functions on `Observable`, but `Flowable`, `Maybe`, and `Single` have similar syntax:
 
+* `.create(x)`: Creates an observable from scratch.
 * `.just(x)`: Creates an observable as a wrapper around other data types (e.g. strings, ints).
-* `.fromIterable(x)` / `.fromArray(x)`: Creates an observable from an iterable / array, and emits them in the existing order.
-* `.fromCallable(x)` / `.fromFuture(x)`: Creates an observable from a callable / future, useful for conversion from existing async code.
-* `.interval(x, y)`: Creates an observable that emits the number of times run every x, using y for units.
+* `.from(x)`: Creates an observable from an iterable / array / callable / future, and emits them in the existing order.
+* `.interval(x, y)` / `timer(x, y)`: Creates an observable that emits the number of times run every x (interval) / after x (timer), using y for units.
+* `.range(x, y)`: Emits y values, starting at x.
+* `.empty()` / `.error()` / `.never()`: Creates an observable that emits nothing, and then completes / errors / does nothing.
 
-Many modifiers are available when creating an observable:
+The emitter output can also be modified via various functions:
 
-* `.take(x)`: Specifies the maximum number of emissions to emit. 
+* `.take(x)`: Specifies the maximum number of emissions to emit.
 
 ### Subscribers / Observers
 Subscribers (also known as observers) listen to the observables. Each observable can have 0-X subscribers. There are 3 main methods that can be called:
@@ -33,6 +35,30 @@ Subscribers (also known as observers) listen to the observables. Each observable
 * `onNext()`: Called when a new item is emitted from the observable.
 * `onComplete()`: Called when the observable terminates successfully.
 * `onError()`: Called when the observable terminates unsuccessfully.
+
+### Disposables
+Disposables are created when adding a subscriber to an emitter. Retaining a reference to a disposable (`val disposable = e.subscribe(s)`) allows it to be cleaned up when the subscription is no longer necessary, via `.dispose()`.
+
+A CompositeDisposable is a collection of disposables, useful for disposing of multiple subscriptions at once. It can be used via:
+
+* `compositeDisposable.add(disposable)`: Add a new disposable.
+* `compositeDisposable.dispose()`: Dispose all disposables.
+
+### Schedulers
+Schedulers are thread pools used for managing one or more threads. When a task needs to be executed, the scheduler decides which thread the task will be run on. 
+
+A scheduler can be assigned to two places during the subscription process:
+
+* `subscribeOn()`: Assigns a scheduler for doing the observer function.
+* `observeOn()`: Assigns a scheduler for receiving the results of the observer function.
+
+The following schedulers are always available via static references on `Schedulers`, whilst `AndroidSchedulers.mainThread` is RxAndroid specific and provides the UI / main thread:
+
+* `Schedulers.io()`: Used for I/O work.
+* `Schedulers.computation()`: Used for large, CPU intensive tasks.
+* `Schedulers.newThread()`: Creates a new thread, very expensive and generally avoided.
+* `Schedulers.single()`: A single thread that executes all tasks in the order added.
+* `Schedulers.trampoline()`: A single thread that executes all tasks, starting with the most recently added. 
 
 ## Syntax
 ### Creating simple subscription between observable and subscriber
@@ -45,7 +71,7 @@ Subscribers (also known as observers) listen to the observables. Each observable
     }
 </pre>
 
-### Creating simple string emitter and outputting emissions
+### Creating simple string emitter and printing observed strings
 <pre>
     fun emitTest() {
         // Create an observable that loops through a list of strings and emits each (`onNext()`).
