@@ -2,7 +2,10 @@ package uk.co.jakelee.kotlin
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
+import io.reactivex.Observable
+import java.util.concurrent.TimeUnit
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -10,10 +13,41 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        updateText("Quick test")
+        justTest()
+        emitTest()
+        intervalTest()
     }
 
-    fun updateText(text: String) {
-        textBox.text = "Example example"
+    fun justTest() {
+        var result = "" // Initially create an empty string
+        val observable = Observable.just("Hello") // Create an observable that only emits a single string, immediately.
+        observable.subscribe({ s -> result = s }) // On the observable, set a subscriber. Using a lambda, the subscriber's `onNext()` function is set to assign `result` to the emitted string.
+        println(result) // `result` is now "Hello".
+    }
+
+    fun emitTest() {
+        // Create an observable that loops through a list of strings and emits each (`onNext()`).
+        // If anything goes wrong, call `onError()`, otherwise `onComplete()`.
+        val strings = listOf("A", "B", "C")
+        val stringEmittingObservable = Observable.create<String> { emitter ->
+            try {
+                for (string in strings) {
+                    emitter.onNext(string)
+                }
+                emitter.onComplete()
+            } catch (e: Exception) {
+                emitter.onError(e)
+            }
+        }
+
+        // Print out each emitted string
+        stringEmittingObservable.subscribe({ s -> println(s) })
+    }
+
+    fun intervalTest() {
+        Observable
+                .interval(1, TimeUnit.SECONDS)
+                .take(5)
+                .subscribe( { s -> println(s) })
     }
 }
