@@ -1,4 +1,4 @@
-# Kotlin RxJava 2 & RxAndroid notes
+# RxJava 2 & RxAndroid notes
 
 ## Summary
 
@@ -60,7 +60,9 @@ The following schedulers are always available via static references on `Schedule
 * `Schedulers.single()`: A single thread that executes all tasks in the order added.
 * `Schedulers.trampoline()`: A single thread that executes all tasks, starting with the most recently added. 
 
-## Syntax
+*Note: These can be overridden using `RxAndroidPlugins.setInitMainThreadSchedulerHandler { _ -> Schedulers.x }`*
+
+## Samples
 ### Creating simple subscription between observable and subscriber
 <pre>
     fun justTest() {
@@ -93,8 +95,29 @@ The following schedulers are always available via static references on `Schedule
     }
 </pre>
 
+### [JUnit](https://junit.org/junit5/) testing emitters with [Mockito](https://github.com/mockito/mockito) using the MVP architecture. 
+In this sample, the use case is implementing testing for a view without direct access to the existing observer. `exampleObservable` is an existing method, in this case triggered by tapping on a button. It is of type `Observable<Unit>`.
+<pre>
+    // `exampleEmitter` stores an updated reference to `e` (the existing emitter), so that it can be invoked directly.
+    private lateinit var exampleEmitter: ObservableEmitter<Unit>
 
+    @Before
+    fun testSetup() {
+        // Using Mockito, add an observer to `exampleObservable`. Whenever `exampleObservable` emits, update the local reference to the emitter (`exampleEmitter`).
+    	whenever(exampleObservable).thenReturn(Observable.create { e ->
+    	    exampleEmitter = e
+    	})
+    }
 
+    @Test
+    fun testButtonTap() {
+        // Trigger the observable manually, invoking both the original and additional observers.
+        exampleEmitter.onNext(Unit)
+
+        // `assertEquals()` and `verify()` statements would go here, to ensure the correct effects were made.
+    }
+
+</pre>
 
 
 *Guide based on an excellent article by [Lars Vogel & Simon Scholz for Vogella](http://www.vogella.com/tutorials/RxJava/article.html)*. 
